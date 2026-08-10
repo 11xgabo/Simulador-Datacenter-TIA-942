@@ -1,0 +1,6 @@
+{
+  "name": "Simulador Datacenter TIA-942",
+  "description": "Simulador interactivo de riesgos físicos y lógicos para infraestructura de datacenters basado en la norma ANSI/TIA-942 con análisis por IA Gemini.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

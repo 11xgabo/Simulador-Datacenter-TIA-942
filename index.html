@@ -1,0 +1,1769 @@
+<!DOCTYPE html>
+<html lang="es" class="dark h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador de Riesgos de Datacenter - ANSI/TIA-942</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            datacenter: {
+              bg: '#050505',
+              panel: '#12141a',
+              border: '#2a2d35',
+              accent: '#3b82f6',
+              warning: '#f59e0b',
+              danger: '#ef4444',
+              success: '#22c55e',
+              rackBg: '#08090b',
+            }
+          },
+          fontFamily: {
+            mono: ['JetBrains Mono', 'Fira Code', 'Courier New', 'monospace'],
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          animation: {
+            'pulse-fast': 'pulse 0.8s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'glow-red': 'glowRed 1.2s ease-in-out infinite alternate',
+            'glow-amber': 'glowAmber 1.5s ease-in-out infinite alternate',
+            'glow-green': 'glowGreen 1.5s ease-in-out infinite alternate',
+            'scanline': 'scanline 8s linear infinite',
+          },
+          keyframes: {
+            glowRed: {
+              '0%': { boxShadow: '0 0 5px rgba(239, 68, 68, 0.5), inset 0 0 5px rgba(239, 68, 68, 0.2)' },
+              '100%': { boxShadow: '0 0 20px rgba(239, 68, 68, 0.9), inset 0 0 15px rgba(239, 68, 68, 0.5)' }
+            },
+            glowAmber: {
+              '0%': { boxShadow: '0 0 5px rgba(245, 158, 11, 0.5)' },
+              '100%': { boxShadow: '0 0 18px rgba(245, 158, 11, 0.8)' }
+            },
+            glowGreen: {
+              '0%': { boxShadow: '0 0 5px rgba(34, 197, 94, 0.5)' },
+              '100%': { boxShadow: '0 0 18px rgba(34, 197, 94, 0.8)' }
+            },
+            scanline: {
+              '0%': { transform: 'translateY(-100%)' },
+              '100%': { transform: 'translateY(1000%)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    :root {
+      --bg-dark: #050505;
+      --panel-bg: #12141a;
+      --border-color: #2a2d35;
+      --accent-blue: #3b82f6;
+      --accent-green: #22c55e;
+      --accent-red: #ef4444;
+      --accent-yellow: #f59e0b;
+      --accent-cyan: #06b6d4;
+      --text-primary: #e2e8f0;
+      --text-dim: #94a3b8;
+      --font-mono: 'JetBrains Mono', 'Courier New', Courier, monospace;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.05), transparent 50%),
+        linear-gradient(to right, rgba(42, 45, 53, 0.25) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(42, 45, 53, 0.25) 1px, transparent 1px);
+      background-size: 100% 100%, 32px 32px, 32px 32px;
+    }
+
+    .header-banner {
+      background: linear-gradient(to bottom, #1a1c23, #0d0f14);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .panel-box {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+    }
+
+    .panel-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      letter-spacing: 1.5px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+      font-family: var(--font-mono);
+    }
+
+    .btn-threat-physical {
+      background: #1e2128;
+      border: 1px solid #2a2d35;
+      border-left: 3px solid var(--accent-red);
+      color: var(--text-primary);
+      transition: all 0.2s ease;
+    }
+
+    .btn-threat-physical:hover {
+      background: #2a2f3a;
+      border-color: var(--accent-blue);
+    }
+
+    .btn-threat-logical {
+      background: #1e2128;
+      border: 1px solid #2a2d35;
+      border-left: 3px solid var(--accent-blue);
+      color: var(--text-primary);
+      transition: all 0.2s ease;
+    }
+
+    .btn-threat-logical:hover {
+      background: #2a2f3a;
+      border-color: var(--accent-blue);
+    }
+
+    .btn-countermeasure {
+      background: #171922;
+      border: 1px solid #2a2d35;
+      border-left: 3px solid #64748b;
+      color: var(--text-primary);
+      transition: all 0.2s ease;
+    }
+
+    .btn-countermeasure:hover:not(:disabled) {
+      background: #232733;
+      border-color: var(--accent-blue);
+    }
+
+    .btn-countermeasure.activated {
+      background: rgba(34, 197, 94, 0.12);
+      border-color: var(--accent-green);
+      border-left: 4px solid var(--accent-green);
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
+    }
+
+    .threat-input {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px dashed var(--border-color);
+      color: #fff;
+    }
+
+    /* Rack specific styles */
+    .rack-cabinet {
+      background: #08090b;
+      border: 8px solid #2d3039;
+      border-radius: 6px;
+      box-shadow: inset 0 0 40px rgba(0,0,0,0.9), 0 0 25px rgba(0, 0, 0, 0.6);
+    }
+
+    .equipment-card {
+      background: linear-gradient(90deg, #232730, #16181d);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .status-normal {
+      border-left: 3px solid var(--accent-green);
+    }
+
+    .status-alerta {
+      border-left: 3px solid var(--accent-yellow);
+      box-shadow: inset 0 0 12px rgba(245, 158, 11, 0.15);
+    }
+
+    .status-critico {
+      border-left: 3px solid var(--accent-red);
+      box-shadow: inset 0 0 15px rgba(239, 68, 68, 0.25);
+      animation: glowRed 1.2s ease-in-out infinite alternate;
+    }
+
+    /* Estilizado de scrollbars personalizadas para consola de auditoría y certificado */
+    .custom-scroll::-webkit-scrollbar,
+    .terminal-scroll::-webkit-scrollbar,
+    #audit-output::-webkit-scrollbar,
+    #cert-output::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    .custom-scroll::-webkit-scrollbar-track,
+    .terminal-scroll::-webkit-scrollbar-track,
+    #audit-output::-webkit-scrollbar-track,
+    #cert-output::-webkit-scrollbar-track {
+      background: #06080c;
+      border-radius: 4px;
+    }
+
+    .custom-scroll::-webkit-scrollbar-thumb,
+    .terminal-scroll::-webkit-scrollbar-thumb,
+    #audit-output::-webkit-scrollbar-thumb,
+    #cert-output::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border: 1px solid #06b6d4;
+      border-radius: 4px;
+      box-shadow: 0 0 6px rgba(6, 182, 212, 0.3);
+    }
+
+    .custom-scroll::-webkit-scrollbar-thumb:hover,
+    .terminal-scroll::-webkit-scrollbar-thumb:hover,
+    #audit-output::-webkit-scrollbar-thumb:hover,
+    #cert-output::-webkit-scrollbar-thumb:hover {
+      background: #06b6d4;
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.8);
+    }
+
+    /* Firefox scrollbar styles */
+    .custom-scroll, .terminal-scroll, #audit-output, #cert-output {
+      scrollbar-width: thin;
+      scrollbar-color: #06b6d4 #06080c;
+    }
+
+    /* LED Indicators */
+    .led {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .led-green { background-color: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
+    .led-amber { background-color: var(--accent-yellow); box-shadow: 0 0 6px var(--accent-yellow); }
+    .led-red { background-color: var(--accent-red); box-shadow: 0 0 8px var(--accent-red); animation: blink 0.8s infinite; }
+    .led-blue { background-color: var(--accent-blue); box-shadow: 0 0 6px var(--accent-blue); }
+
+    .led-glow-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* Console CRT style */
+    .console-terminal {
+      background: #000;
+      border: 1px solid #1e293b;
+      position: relative;
+    }
+    .console-terminal::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(rgba(18,16,16,0) 0, rgba(0,0,0,0.25) 50%, rgba(18,16,16,0) 100%);
+      background-size: 100% 4px;
+      pointer-events: none;
+    }
+
+    /* Scanline effect */
+    .scanline-overlay {
+      background: linear-gradient(
+        to bottom,
+        rgba(255,255,255,0),
+        rgba(255,255,255,0) 50%,
+        rgba(0, 0, 0, 0.35) 50%,
+        rgba(0, 0, 0, 0.35)
+      );
+      background-size: 100% 4px;
+      pointer-events: none;
+    }
+  </style>
+
+  <!-- Import @google/genai SDK ESM -->
+  <script type="module">
+    import { GoogleGenAI } from 'https://esm.run/@google/genai';
+    window.GoogleGenAI = GoogleGenAI;
+  </script>
+</head>
+
+<body class="min-h-screen flex flex-col antialiased selection:bg-blue-500 selection:text-white">
+
+  <!-- TOP HEADER / COMMAND BAR -->
+  <header class="header-banner sticky top-0 z-50 px-4 py-3">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      
+      <!-- Logo & Title -->
+      <div class="flex items-center space-x-3">
+        <div class="p-2.5 bg-black/60 border border-[#2a2d35] rounded text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.2)]">
+          <i class="fa-solid fa-server text-lg"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-sm font-extrabold tracking-[2px] text-slate-100 font-mono uppercase">DC-SIM: TIA-942 RISK ARCHITECT</h1>
+          </div>
+          <p class="text-[11px] text-slate-400">Simulador interactivo de riesgos físicos, lógicos y evolución de mitigación</p>
+        </div>
+      </div>
+
+      <!-- PROMINENT RATED LEVEL BADGE INDICATOR -->
+      <div id="rated-badge-container" class="bg-red-950/80 border border-red-700/80 text-red-400 px-4 py-2 rounded-lg flex items-center space-x-3 font-mono shadow-[0_0_15px_rgba(239,68,68,0.2)] transition-all duration-300">
+        <span id="rated-led-dot" class="led-glow-dot bg-red-500 shadow-[0_0_10px_#ef4444]"></span>
+        <div>
+          <span class="text-[9px] text-slate-400 block uppercase tracking-widest font-sans">Nivel de Certificación TIA-942:</span>
+          <strong id="rated-level-text" class="text-sm font-bold tracking-wider">RATED 1 (Componentes Básicos)</strong>
+        </div>
+      </div>
+
+      <!-- Telemetry Status Bar -->
+      <div class="flex flex-wrap items-center gap-3 text-xs font-mono">
+        <!-- Live Clock -->
+        <div class="bg-black px-3 py-1.5 rounded border border-[#2a2d35] flex items-center space-x-2 text-slate-300">
+          <i class="fa-regular fa-clock text-blue-400"></i>
+          <span id="live-clock">00:00:00 UTC</span>
+        </div>
+
+        <!-- Overall Status -->
+        <div id="overall-status-badge" class="bg-red-950/80 border border-red-600/50 text-red-400 px-3 py-1.5 rounded flex items-center space-x-2 font-semibold">
+          <span id="overall-led" class="led led-red"></span>
+          <span id="overall-status-text">ESTADO: RATED 1 (SIN REDUNDANCIA)</span>
+        </div>
+
+        <!-- Audio Mute Toggle -->
+        <button id="audio-toggle-btn" class="bg-[#1e2128] hover:bg-[#2a2f3a] text-slate-300 px-3 py-1.5 rounded border border-[#2a2d35] flex items-center space-x-2 transition cursor-pointer">
+          <i id="audio-icon" class="fa-solid fa-volume-high text-blue-400"></i>
+          <span id="audio-label">Sonido ON</span>
+        </button>
+
+        <!-- Reset Button -->
+        <button id="reset-sim-btn" class="bg-[#1e2128] hover:bg-[#2a2f3a] text-slate-200 px-3 py-1.5 rounded border border-[#2a2d35] flex items-center space-x-1.5 transition cursor-pointer">
+          <i class="fa-solid fa-rotate-right text-amber-400"></i>
+          <span>Restablecer</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- API KEY BAR -->
+  <section class="bg-black/90 border-b border-[#2a2d35] py-2 px-4">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+      <div class="flex items-center space-x-2 text-slate-300 w-full sm:w-auto">
+        <i class="fa-solid fa-key text-amber-400"></i>
+        <label for="api-key-input" class="font-mono font-medium whitespace-nowrap text-slate-400">ENTER GEMINI API KEY:</label>
+        <div class="relative w-full sm:w-80">
+          <input 
+            type="password" 
+            id="api-key-input" 
+            placeholder="AIzaSy... (Ingresa tu clave para IA en vivo)"
+            class="w-full bg-black border border-[#2a2d35] rounded px-3 py-1 text-emerald-400 placeholder-slate-600 focus:outline-none focus:border-blue-500 font-mono text-xs"
+          />
+          <button id="toggle-key-visibility" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+            <i class="fa-regular fa-eye"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3 text-slate-400 text-xs">
+        <span class="flex items-center space-x-1">
+          <i class="fa-solid fa-microchip text-blue-400"></i>
+          <span>Modelo: <strong class="text-blue-300 font-mono">gemini-2.5-flash</strong></span>
+        </span>
+        <span class="hidden md:inline text-slate-700">|</span>
+        <span class="hidden md:inline text-slate-400">
+          <i class="fa-solid fa-shield-halved text-emerald-400"></i> API Key guardada localmente de forma segura
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN CONTENT CONTAINER - 4-PANEL GRID -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5">
+
+    <!-- SECCIÓN 1: PANEL DE DISPARADORES DE AMENAZAS (lg:col-span-3) -->
+    <section class="lg:col-span-3 flex flex-col space-y-4">
+      <div class="panel-box rounded-xl p-4 shadow-xl flex-1 flex flex-col">
+        <div class="flex items-center space-x-2 border-b border-[#2a2d35] pb-2 mb-3">
+          <i class="fa-solid fa-triangle-exclamation text-red-400"></i>
+          <h2 class="panel-title mb-0 border-b-0 pb-0">Panel de Disparadores</h2>
+        </div>
+        <p class="text-xs text-slate-400 mb-4">Inyecta incidentes físicos o lógicos para probar la resiliencia TIA-942.</p>
+
+        <!-- AMENAZAS FÍSICAS -->
+        <div class="mb-4">
+          <div class="panel-title flex items-center justify-between">
+            <span><i class="fa-solid fa-temperature-arrow-up text-red-400 mr-1.5"></i> Physical Threats</span>
+            <span class="text-[9px] text-slate-500 lowercase font-normal">Capas 1 / HVAC</span>
+          </div>
+          <div class="space-y-2">
+            <button class="threat-btn btn-threat-physical w-full text-left p-2.5 rounded text-xs font-medium flex items-center justify-between group cursor-pointer"
+                    data-threat="Falla crítica de Aire Acondicionado CRAC (Pérdida de refrigeración y flujo de aire en pasillo frío)">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-snowflake text-amber-400 group-hover:animate-spin"></i>
+                <span>Falla de CRAC (HVAC)</span>
+              </span>
+              <i class="fa-solid fa-bolt text-slate-600 group-hover:text-red-400 text-xs"></i>
+            </button>
+
+            <button class="threat-btn btn-threat-physical w-full text-left p-2.5 rounded text-xs font-medium flex items-center justify-between group cursor-pointer"
+                    data-threat="Corte de Energía Principal de la Red Eléctrica con Falla de Conmutación de Baterías UPS">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-plug-circle-xmark text-red-400"></i>
+                <span>Corte Energía Sin UPS</span>
+              </span>
+              <i class="fa-solid fa-bolt text-slate-600 group-hover:text-red-400 text-xs"></i>
+            </button>
+
+            <button class="threat-btn btn-threat-physical w-full text-left p-2.5 rounded text-xs font-medium flex items-center justify-between group cursor-pointer"
+                    data-threat="Intrusión Física No Autorizada a la Sala Blanca de Servidores con Desconexión Manual de Fibra Óptica">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-user-ninja text-purple-400"></i>
+                <span>Intrusión Sala Blanca</span>
+              </span>
+              <i class="fa-solid fa-bolt text-slate-600 group-hover:text-purple-400 text-xs"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- AMENAZAS LÓGICAS -->
+        <div class="mb-4">
+          <div class="panel-title flex items-center justify-between">
+            <span><i class="fa-solid fa-network-wired text-blue-400 mr-1.5"></i> Logical Threats</span>
+            <span class="text-[9px] text-slate-500 lowercase font-normal">Capas 2-7</span>
+          </div>
+          <div class="space-y-2">
+            <button class="threat-btn btn-threat-logical w-full text-left p-2.5 rounded text-xs font-medium flex items-center justify-between group cursor-pointer"
+                    data-threat="Ataque DDoS Volumétrico masivo SYN-Flood saturando los switches Core ToR y saturando buffers de paquete">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-burst text-blue-400"></i>
+                <span>Ataque DDoS Volumétrico</span>
+              </span>
+              <i class="fa-solid fa-bolt text-slate-600 group-hover:text-blue-400 text-xs"></i>
+            </button>
+
+            <button class="threat-btn btn-threat-logical w-full text-left p-2.5 rounded text-xs font-medium flex items-center justify-between group cursor-pointer"
+                    data-threat="Infección masiva de Ransomware cifrando volúmenes de almacenamiento en la SAN y elevando CPU al 100%">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-skull-crossbones text-red-400"></i>
+                <span>Infiltración Ransomware</span>
+              </span>
+              <i class="fa-solid fa-bolt text-slate-600 group-hover:text-red-400 text-xs"></i>
+            </button>
+
+            <button class="threat-btn btn-threat-logical w-full text-left p-2.5 rounded text-xs font-medium flex items-center justify-between group cursor-pointer"
+                    data-threat="Acceso No Autorizado y Compromiso de la Red Out-of-Band (OOB) de Gestión IPMI/iLO de Servidores">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-user-secret text-amber-400"></i>
+                <span>Compromiso Red OOB/iLO</span>
+              </span>
+              <i class="fa-solid fa-bolt text-slate-600 group-hover:text-amber-400 text-xs"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- AMENAZA PERSONALIZADA -->
+        <div class="pt-2 border-t border-[#2a2d35] mt-auto">
+          <label for="custom-threat-input" class="panel-title block mb-2">
+            <i class="fa-solid fa-pen-to-square text-blue-400 mr-1"></i> Custom Simulation
+          </label>
+          <textarea 
+            id="custom-threat-input" 
+            rows="2" 
+            placeholder="Escribe tu vector de riesgo (ej: Explosión de baterías en sala UPS)..."
+            class="threat-input w-full rounded p-2 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500 font-sans resize-none"
+          ></textarea>
+          <button 
+            id="custom-threat-btn"
+            class="w-full mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-2 px-3 rounded text-xs uppercase tracking-wider flex items-center justify-center space-x-2 shadow-lg transition cursor-pointer"
+          >
+            <i class="fa-solid fa-play"></i>
+            <span>Simular Amenaza Custom</span>
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECCIÓN 2: PANEL DE MEJORAS DE INFRAESTRUCTURA Y MITIGACIÓN (lg:col-span-3) -->
+    <section class="lg:col-span-3 flex flex-col space-y-4">
+      <div class="panel-box rounded-xl p-4 shadow-xl flex-1 flex flex-col">
+        <div class="flex items-center justify-between border-b border-[#2a2d35] pb-2 mb-3">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+            <h2 class="panel-title mb-0 border-b-0 pb-0">Mejoras de Infraestructura</h2>
+          </div>
+          <span class="text-[9px] font-mono text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">Contramedidas</span>
+        </div>
+        <p class="text-xs text-slate-400 mb-4">Activa capacidades de seguridad física y lógica para escalar el Nivel Rated y mitigar riesgos.</p>
+
+        <!-- CONTRAMEDIDAS RATED / INFRAESTRUCTURA -->
+        <div class="space-y-2.5 flex-1 overflow-y-auto pr-1 custom-scroll">
+          
+          <!-- Mejora 1: Generador N+1 (Eleva a Rated 2) -->
+          <button id="cm-ups_generator" class="cm-btn btn-countermeasure w-full text-left p-2.5 rounded text-xs transition flex flex-col space-y-1 cursor-pointer group" data-cm="ups_generator" data-target-rated="2">
+            <div class="flex items-center justify-between w-full">
+              <span class="font-bold text-slate-200 group-hover:text-blue-300 flex items-center space-x-2">
+                <i class="fa-solid fa-charging-station text-amber-400"></i>
+                <span>Generador N+1 &amp; UPS Respaldo</span>
+              </span>
+              <span class="cm-status-badge text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">DESACTIVADO</span>
+            </div>
+            <div class="text-[10px] text-slate-400 flex items-center justify-between pt-1">
+              <span>Respaldo eléctrico de batería/diesel</span>
+              <span class="text-amber-400 font-bold font-mono">+ ELEVA A RATED 2</span>
+            </div>
+          </button>
+
+          <!-- Mejora 2: Climatización Mantenimiento Concurrente (Eleva a Rated 3) -->
+          <button id="cm-crac_redundant" class="cm-btn btn-countermeasure w-full text-left p-2.5 rounded text-xs transition flex flex-col space-y-1 cursor-pointer group" data-cm="crac_redundant" data-target-rated="3">
+            <div class="flex items-center justify-between w-full">
+              <span class="font-bold text-slate-200 group-hover:text-blue-300 flex items-center space-x-2">
+                <i class="fa-solid fa-fan text-blue-400"></i>
+                <span>HVAC Mantenimiento Concurrente</span>
+              </span>
+              <span class="cm-status-badge text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">DESACTIVADO</span>
+            </div>
+            <div class="text-[10px] text-slate-400 flex items-center justify-between pt-1">
+              <span>Vías de aire/refrigeración redundantes</span>
+              <span class="text-blue-400 font-bold font-mono">+ ELEVA A RATED 3</span>
+            </div>
+          </button>
+
+          <!-- Mejora 3: Tolerancia a Fallos Activa-Activa (Eleva a Rated 4) -->
+          <button id="cm-active_fault_tolerant" class="cm-btn btn-countermeasure w-full text-left p-2.5 rounded text-xs transition flex flex-col space-y-1 cursor-pointer group" data-cm="active_fault_tolerant" data-target-rated="4">
+            <div class="flex items-center justify-between w-full">
+              <span class="font-bold text-slate-200 group-hover:text-blue-300 flex items-center space-x-2">
+                <i class="fa-solid fa-diagram-project text-emerald-400"></i>
+                <span>Tolerancia a Fallos Activa 2N</span>
+              </span>
+              <span class="cm-status-badge text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">DESACTIVADO</span>
+            </div>
+            <div class="text-[10px] text-slate-400 flex items-center justify-between pt-1">
+              <span>Suministros y redes duales independientes</span>
+              <span class="text-emerald-400 font-bold font-mono">+ ELEVA A RATED 4</span>
+            </div>
+          </button>
+
+          <!-- Mejora 4: Anti-DDoS & Firewall Avanzado (Protección Lógica) -->
+          <button id="cm-antiddos_firewall" class="cm-btn btn-countermeasure w-full text-left p-2.5 rounded text-xs transition flex flex-col space-y-1 cursor-pointer group" data-cm="antiddos_firewall">
+            <div class="flex items-center justify-between w-full">
+              <span class="font-bold text-slate-200 group-hover:text-blue-300 flex items-center space-x-2">
+                <i class="fa-solid fa-shield-virus text-purple-400"></i>
+                <span>Anti-DDoS Nube &amp; Firewall WAF</span>
+              </span>
+              <span class="cm-status-badge text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">DESACTIVADO</span>
+            </div>
+            <div class="text-[10px] text-slate-400 flex items-center justify-between pt-1">
+              <span>Filtrado volumétrico L3-L7 &amp; Scrubbing</span>
+              <span class="text-purple-400 font-bold font-mono">PROTECCIÓN LÓGICA</span>
+            </div>
+          </button>
+
+          <!-- Mejora 5: Control Biométrico & Esclusa Mantrap (Protección Física) -->
+          <button id="cm-mantrap_biometric" class="cm-btn btn-countermeasure w-full text-left p-2.5 rounded text-xs transition flex flex-col space-y-1 cursor-pointer group" data-cm="mantrap_biometric">
+            <div class="flex items-center justify-between w-full">
+              <span class="font-bold text-slate-200 group-hover:text-blue-300 flex items-center space-x-2">
+                <i class="fa-solid fa-fingerprint text-cyan-400"></i>
+                <span>Biometría &amp; Esclusas Mantrap</span>
+              </span>
+              <span class="cm-status-badge text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">DESACTIVADO</span>
+            </div>
+            <div class="text-[10px] text-slate-400 flex items-center justify-between pt-1">
+              <span>Control físico de acceso de 2 factores</span>
+              <span class="text-cyan-400 font-bold font-mono">PROTECCIÓN FÍSICA</span>
+            </div>
+          </button>
+
+        </div>
+
+        <div class="pt-3 border-t border-[#2a2d35] mt-3 flex items-center justify-between text-[11px] font-mono text-slate-400">
+          <span>MEJORAS ACTIVAS: <strong id="active-cm-count" class="text-emerald-400">0 / 5</strong></span>
+          <button id="clear-cm-btn" class="text-slate-500 hover:text-slate-300 text-[10px] underline cursor-pointer">Desactivar todas</button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECCIÓN 3: VISTA GRÁFICA DEL RACK DE 19 PULGADAS (lg:col-span-3) -->
+    <section class="lg:col-span-3 flex flex-col space-y-4">
+      <div class="panel-box rounded-xl p-4 shadow-xl flex-1 flex flex-col">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-[#2a2d35] pb-2 mb-3">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-hard-drive text-blue-400"></i>
+            <h2 class="panel-title mb-0 border-b-0 pb-0">Gabinete Rack 19" (42U)</h2>
+          </div>
+          <span class="text-[10px] font-mono text-slate-400 bg-black px-2 py-0.5 rounded border border-[#2a2d35]">CABINET A-01</span>
+        </div>
+
+        <!-- Dynamic Rack Frame Structure -->
+        <div class="rack-cabinet rounded p-3 flex-1 flex flex-col relative overflow-hidden">
+          
+          <!-- Scanline Overlay -->
+          <div class="absolute inset-0 scanline-overlay pointer-events-none"></div>
+
+          <!-- Top Fan Unit Frame (U42 Indicator) -->
+          <div class="bg-black/90 border-b border-[#2a2d35] p-1.5 flex items-center justify-between text-[10px] font-mono text-slate-400 mb-2">
+            <span>UPPER VENTILATION UNIT (U42)</span>
+            <div class="flex items-center space-x-1">
+              <i id="rack-fan-icon" class="fa-solid fa-fan text-blue-400 animate-spin"></i>
+              <span id="crac-temp-display" class="text-blue-300 font-bold">21°C Ambient</span>
+            </div>
+          </div>
+
+          <!-- RACK SLOTS CONTAINER -->
+          <div class="flex-1 flex flex-col justify-between space-y-3 relative z-10 my-1">
+            
+            <!-- EQUIPO 1: SWITCH CORE ToR (TOP) -->
+            <div id="equipment-switch_core_tor" class="equipment-card status-normal rounded p-2.5 cursor-pointer hover:scale-[1.01] relative">
+              <div class="flex items-center justify-between mb-1">
+                <div class="flex items-center space-x-2">
+                  <span class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-black text-blue-400 border border-[#2a2d35]">U40-U41</span>
+                  <h3 class="text-xs font-bold font-mono text-slate-100">ToR Switch Core-01</h3>
+                </div>
+                <span id="badge-switch_core_tor" class="text-[9px] font-mono px-1.5 py-0.5 rounded font-bold uppercase bg-emerald-950/80 text-emerald-400 border border-emerald-700">NORMAL</span>
+              </div>
+
+              <!-- Ports visual grid -->
+              <div class="grid grid-cols-12 gap-0.5 my-1.5 bg-black/90 p-1 rounded border border-[#1e2128]">
+                <div class="h-2 bg-emerald-500/80 rounded-xs"></div>
+                <div class="h-2 bg-emerald-500/80 rounded-xs"></div>
+                <div class="h-2 bg-emerald-500/80 rounded-xs"></div>
+                <div class="h-2 bg-emerald-500/80 rounded-xs"></div>
+                <div class="h-2 bg-emerald-500/80 rounded-xs"></div>
+                <div class="h-2 bg-emerald-500/80 rounded-xs"></div>
+                <div class="h-2 bg-emerald-500/80 rounded-xs"></div>
+                <div class="h-2 bg-emerald-500/80 rounded-xs"></div>
+                <div class="h-2 bg-emerald-500/80 rounded-xs"></div>
+                <div class="h-2 bg-emerald-500/80 rounded-xs"></div>
+                <div class="h-2 bg-emerald-500/80 rounded-xs"></div>
+                <div class="h-2 bg-emerald-500/80 rounded-xs"></div>
+              </div>
+
+              <!-- Metrics Summary -->
+              <div class="grid grid-cols-3 gap-1 text-[10px] font-mono mt-1 pt-1 border-t border-[#2a2d35] text-slate-300">
+                <div>
+                  <span class="text-slate-500 block text-[8px]">TEMP RACK</span>
+                  <span id="temp-switch_core_tor" class="font-bold text-emerald-400">24°C</span>
+                </div>
+                <div>
+                  <span class="text-slate-500 block text-[8px]">ANCHO BANDA</span>
+                  <span id="load-switch_core_tor" class="font-bold text-blue-400">32%</span>
+                </div>
+                <div>
+                  <span class="text-slate-500 block text-[8px]">BUS REDUND</span>
+                  <span class="font-bold text-slate-300">A/B Dual</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- EQUIPO 2: ENCLOSURE BLADE SERVIDORES (MIDDLE) -->
+            <div id="equipment-servidor_blade_prod" class="equipment-card status-normal rounded p-2.5 cursor-pointer hover:scale-[1.01] relative">
+              <div class="flex items-center justify-between mb-1">
+                <div class="flex items-center space-x-2">
+                  <span class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-black text-blue-400 border border-[#2a2d35]">U10-U20</span>
+                  <h3 class="text-xs font-bold font-mono text-slate-100">Enclosure Blade Prod-01</h3>
+                </div>
+                <span id="badge-servidor_blade_prod" class="text-[9px] font-mono px-1.5 py-0.5 rounded font-bold uppercase bg-emerald-950/80 text-emerald-400 border border-emerald-700">NORMAL</span>
+              </div>
+
+              <!-- Blades visual slots -->
+              <div class="flex space-x-1 my-1.5 bg-black/90 p-1 rounded border border-[#1e2128]">
+                <div class="flex-1 h-3 bg-[#1e2128] rounded-xs overflow-hidden flex items-center justify-center text-[7px] text-blue-300 font-mono">B01</div>
+                <div class="flex-1 h-3 bg-[#1e2128] rounded-xs overflow-hidden flex items-center justify-center text-[7px] text-blue-300 font-mono">B02</div>
+                <div class="flex-1 h-3 bg-[#1e2128] rounded-xs overflow-hidden flex items-center justify-center text-[7px] text-blue-300 font-mono">B03</div>
+                <div class="flex-1 h-3 bg-[#1e2128] rounded-xs overflow-hidden flex items-center justify-center text-[7px] text-blue-300 font-mono">B04</div>
+                <div class="flex-1 h-3 bg-[#1e2128] rounded-xs overflow-hidden flex items-center justify-center text-[7px] text-blue-300 font-mono">B05</div>
+                <div class="flex-1 h-3 bg-[#1e2128] rounded-xs overflow-hidden flex items-center justify-center text-[7px] text-blue-300 font-mono">B06</div>
+              </div>
+
+              <!-- Metrics Summary -->
+              <div class="grid grid-cols-3 gap-1 text-[10px] font-mono mt-1 pt-1 border-t border-[#2a2d35] text-slate-300">
+                <div>
+                  <span class="text-slate-500 block text-[8px]">TEMP CPU</span>
+                  <span id="temp-servidor_blade_prod" class="font-bold text-emerald-400">26°C</span>
+                </div>
+                <div>
+                  <span class="text-slate-500 block text-[8px]">CARGA PROCESO</span>
+                  <span id="load-servidor_blade_prod" class="font-bold text-blue-400">48%</span>
+                </div>
+                <div>
+                  <span class="text-slate-500 block text-[8px]">HVAC BUS</span>
+                  <span id="hvac-servidor_blade_prod" class="font-bold text-slate-300">N (Single)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- EQUIPO 3: CABINA DE DISCOS SAN (STORAGE AT BASE) -->
+            <div id="equipment-cabina_discos_san" class="equipment-card status-normal rounded p-2.5 cursor-pointer hover:scale-[1.01] relative">
+              <div class="flex items-center justify-between mb-1">
+                <div class="flex items-center space-x-2">
+                  <span class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-black text-blue-400 border border-[#2a2d35]">U01-U06</span>
+                  <h3 class="text-xs font-bold font-mono text-slate-100">SAN Array S-12</h3>
+                </div>
+                <span id="badge-cabina_discos_san" class="text-[9px] font-mono px-1.5 py-0.5 rounded font-bold uppercase bg-emerald-950/80 text-emerald-400 border border-emerald-700">NORMAL</span>
+              </div>
+
+              <!-- Disks visual array -->
+              <div class="grid grid-cols-8 gap-1 my-1.5 bg-black/90 p-1 rounded border border-[#1e2128]">
+                <div class="h-2 bg-emerald-500/80 rounded-xs"></div>
+                <div class="h-2 bg-emerald-500/80 rounded-xs"></div>
+                <div class="h-2 bg-emerald-500/80 rounded-xs"></div>
+                <div class="h-2 bg-emerald-500/80 rounded-xs"></div>
+                <div class="h-2 bg-emerald-500/80 rounded-xs"></div>
+                <div class="h-2 bg-emerald-500/80 rounded-xs"></div>
+                <div class="h-2 bg-emerald-500/80 rounded-xs"></div>
+                <div class="h-2 bg-emerald-500/80 rounded-xs"></div>
+              </div>
+
+              <!-- Metrics Summary -->
+              <div class="grid grid-cols-3 gap-1 text-[10px] font-mono mt-1 pt-1 border-t border-[#2a2d35] text-slate-300">
+                <div>
+                  <span class="text-slate-500 block text-[8px]">TEMP SAN</span>
+                  <span id="temp-cabina_discos_san" class="font-bold text-emerald-400">22°C</span>
+                </div>
+                <div>
+                  <span class="text-slate-500 block text-[8px]">IOPS / CARGA</span>
+                  <span id="load-cabina_discos_san" class="font-bold text-blue-400">28%</span>
+                </div>
+                <div>
+                  <span class="text-slate-500 block text-[8px]">REDUNDANCIA</span>
+                  <span id="san-redundancy-display" class="font-bold text-slate-300">Single Bus</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Rack Base PDU Frame (U01 Indicator) -->
+          <div class="bg-black/90 border-t border-[#2a2d35] p-1.5 flex items-center justify-between text-[9px] font-mono text-slate-400 mt-2">
+            <span>PDU POWER FEED: <strong id="pdu-bus-text" class="text-red-400">Ruta Única (Rated 1)</strong></span>
+            <span id="pdu-status-text" class="text-amber-400 font-bold">230V OK</span>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECCIÓN 4: CONSOLA DE AUDITORÍA NORMATIVA TIA-942 Y EVALUACIÓN DEL CERTIFICADO (lg:col-span-3) -->
+    <section class="lg:col-span-3 flex flex-col space-y-4">
+      <div class="panel-box rounded-xl p-4 shadow-xl flex-1 flex flex-col space-y-4 relative overflow-hidden">
+        
+        <!-- Loading Spinner Overlay -->
+        <div id="ai-loading-spinner" class="hidden absolute inset-0 bg-black/90 backdrop-blur-sm z-30 flex flex-col items-center justify-center p-6 space-y-3">
+          <div class="relative w-12 h-12">
+            <div class="absolute inset-0 rounded-full border-2 border-blue-500/20 border-t-blue-400 animate-spin"></div>
+            <div class="absolute inset-2 rounded-full border-2 border-amber-500/20 border-b-amber-400 animate-spin" style="animation-direction: reverse; animation-duration: 0.8s;"></div>
+          </div>
+          <p class="text-emerald-400 font-bold tracking-wider animate-pulse text-center text-xs">&gt; EVALUANDO RESILIENCIA CON GEMINI 2.5 FLASH...</p>
+          <span class="text-[10px] text-slate-500 text-center">Analizando contramedidas y nivel Rated actual...</span>
+        </div>
+
+        <!-- CONTENEDOR 1: CONSOLA DE AUDITORÍA NORMATIVA TIA-942 -->
+        <div id="audit-console-container" class="console-terminal rounded p-3 flex-1 flex flex-col font-mono text-xs overflow-hidden relative">
+          
+          <!-- Audit Console Header -->
+          <div class="flex items-center justify-between border-b border-[#2a2d35] pb-2 mb-2">
+            <div class="flex items-center space-x-2">
+              <i class="fa-solid fa-terminal text-cyan-400"></i>
+              <h2 class="panel-title mb-0 border-b-0 pb-0 text-cyan-300">Consola de Auditoría Normativa TIA-942</h2>
+            </div>
+            <span class="text-[9px] font-mono text-cyan-400 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800">TELEMETRÍA EN VIVO</span>
+          </div>
+
+          <!-- Audit Console Text Output with Fixed Max Height & Custom Cyan Scrollbar -->
+          <div id="audit-output" class="custom-scroll max-h-[250px] overflow-y-auto space-y-3 pr-1 text-slate-300 flex-1">
+            
+            <!-- Default Welcome Message -->
+            <div class="border-l-2 border-red-500 pl-3 py-1 bg-red-950/20 rounded-r">
+              <span class="text-red-400 font-bold block mb-1">&gt; AUDITORÍA INICIAL: RATED 1 (BASIC)</span>
+              <p class="text-slate-300 leading-relaxed text-[11px]">
+                Datacenter configurado por defecto en <strong class="text-red-400">Rated 1 (Componentes Básicos)</strong> sin vías de alimentación ni climatización redundantes.
+              </p>
+              <p class="text-slate-400 text-[10px] mt-1.5">
+                &gt; Activa mejoras de infraestructura en el panel secundario o simula un ataque para evaluar la resiliencia del sitio.
+              </p>
+            </div>
+
+          </div>
+
+          <!-- Console Footer Bar -->
+          <div class="pt-2 border-t border-[#1e2128] mt-2 flex items-center justify-between text-[10px] text-slate-500">
+            <span>NIVEL AUDITADO: <strong id="audit-rating-status" class="text-red-400">RATED 1</strong></span>
+            <span id="audit-timestamp" class="text-slate-600">--:--:--</span>
+          </div>
+
+        </div>
+
+        <!-- CONTENEDOR 2: EVALUACIÓN DEL CERTIFICADO -->
+        <div id="cert-evaluation-container" class="console-terminal rounded p-3 flex-1 flex flex-col font-mono text-xs overflow-hidden relative">
+          
+          <!-- Certificate Header -->
+          <div class="flex items-center justify-between border-b border-[#2a2d35] pb-2 mb-2">
+            <div class="flex items-center space-x-2">
+              <i class="fa-solid fa-award text-amber-400"></i>
+              <h2 class="panel-title mb-0 border-b-0 pb-0 text-amber-300">Evaluación del Certificado</h2>
+            </div>
+            <span class="text-[9px] font-mono text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800 font-bold">DICTAMEN TIA-942</span>
+          </div>
+
+          <!-- Certificate Evaluation Text Output with Fixed Max Height & Custom Cyan Scrollbar -->
+          <div id="cert-output" class="custom-scroll max-h-[250px] overflow-y-auto pr-1 text-slate-200 flex-1">
+            <div class="border-l-2 border-red-500 p-3 bg-red-950/20 rounded-r border border-slate-800">
+              <span class="text-amber-400 font-bold text-xs block mb-1"><i class="fa-solid fa-award mr-1"></i> EVALUACIÓN DE CERTIFICADO INICIAL</span>
+              <p class="text-slate-200 text-xs leading-relaxed font-sans">
+                INFRAESTRUCTURA INICIAL (RATED 1): El sitio carece de redundancia. Cualquier falla en la acometida o climatización provocará una caída total del servicio.
+              </p>
+            </div>
+          </div>
+
+          <!-- Certificate Footer Bar -->
+          <div class="pt-2 border-t border-[#1e2128] mt-2 flex items-center justify-between text-[10px] text-slate-500">
+            <span>ESTADO NORMATIVO: <span class="text-amber-400 font-bold">ANSI/TIA-942 SPEC</span></span>
+            <span id="cert-timestamp" class="text-slate-600">--:--:--</span>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- EQUIPMENT INSPECTION MODAL -->
+  <div id="equipment-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="panel-box rounded-xl max-w-lg w-full p-6 shadow-2xl relative border border-[#2a2d35]">
+      <button id="close-modal-btn" class="absolute right-4 top-4 text-slate-400 hover:text-slate-100 text-lg cursor-pointer">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="flex items-center space-x-3 mb-4 border-b border-[#2a2d35] pb-3">
+        <div class="p-3 bg-black border border-[#2a2d35] rounded-lg text-blue-400">
+          <i id="modal-equip-icon" class="fa-solid fa-server text-xl"></i>
+        </div>
+        <div>
+          <h3 id="modal-equip-title" class="text-base font-bold text-slate-100 font-mono">Equipo Datacenter</h3>
+          <span id="modal-equip-id" class="text-xs text-slate-400 font-mono">ID: --</span>
+        </div>
+      </div>
+
+      <div class="space-y-4 font-mono text-xs text-slate-300">
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-black p-3 rounded border border-[#2a2d35]">
+            <span class="text-slate-500 text-[10px] block">TEMPERATURA OPERATIVA</span>
+            <span id="modal-equip-temp" class="text-sm font-bold text-emerald-400">24°C</span>
+          </div>
+          <div class="bg-black p-3 rounded border border-[#2a2d35]">
+            <span class="text-slate-500 text-[10px] block">CARGA DE TRABAJO</span>
+            <span id="modal-equip-load" class="text-sm font-bold text-blue-400">35%</span>
+          </div>
+        </div>
+
+        <div class="bg-black p-3 rounded border border-[#2a2d35]">
+          <span class="text-slate-500 text-[10px] block mb-1">DIAGNÓSTICO DE ESTADO</span>
+          <p id="modal-equip-status-msg" class="text-slate-200">El equipo opera dentro de los límites de tolerancia térmica TIA-942.</p>
+        </div>
+
+        <div class="bg-black p-3 rounded border border-[#2a2d35]">
+          <span class="text-slate-500 text-[10px] block mb-1">ESPECIFICACIÓN TIA-942 APLICABLE</span>
+          <p id="modal-equip-tia-spec" class="text-slate-400 text-[11px]">Sección 6: Infraestructura de Cableado y Alimentación A+B redundante.</p>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end">
+        <button id="modal-ok-btn" class="bg-[#1e2128] hover:bg-[#2a2f3a] border border-[#2a2d35] text-slate-200 px-4 py-2 rounded font-mono text-xs font-semibold cursor-pointer transition">
+          Cerrar Inspección
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // INITIAL SYSTEM STATE - DEFAULT RATED 1
+    const initialState = {
+      ratedLevel: 1, // Start at Rated 1 (Componentes Básicos, sin redundancia)
+      countermeasures: {
+        ups_generator: false,          // Rated 2 upgrade
+        crac_redundant: false,         // Rated 3 upgrade
+        active_fault_tolerant: false,  // Rated 4 upgrade
+        antiddos_firewall: false,      // Logical protection
+        mantrap_biometric: false       // Physical access protection
+      },
+      equipos: [
+        {
+          id: "switch_core_tor",
+          nombre: "Switch Core ToR Nexus 9K",
+          temperatura_c: 24,
+          carga_porcentaje: 32,
+          estado: "normal",
+          mensaje_estado: "Switch operando nominalmente. Capa 2/3 sin redundancia."
+        },
+        {
+          id: "servidor_blade_prod",
+          nombre: "Enclosure Blade HPE Synergy 12000",
+          temperatura_c: 26,
+          carga_porcentaje: 48,
+          estado: "normal",
+          mensaje_estado: "Servidores Blade operando en vía única de alimentación."
+        },
+        {
+          id: "cabina_discos_san",
+          nombre: "SAN Storage Dell PowerStore 9000",
+          temperatura_c: 22,
+          carga_porcentaje: 28,
+          estado: "normal",
+          mensaje_estado: "Almacenamiento SAN activo en bus único de distribución."
+        }
+      ],
+      auditoria_normativa: {
+        amenaza_evaluada: "Ninguna (Estado Inicial - Rated 1)",
+        nivel_rated_afectado: "Rated 1 (Basic Data Center)",
+        categoria_tia942: "Operación Básica Sin Redundancia",
+        resumen_ejecutivo: "El datacenter cuenta con componentes básicos. No dispone de caminos de distribución redundantes para energía ni climatización.",
+        clausulas_incumplidas: ["TIA-942 Tabla 5.2: Falta de redundancia N+1 en unidades de enfriamiento.", "TIA-942 Sección 7.2: Ausencia de UPS/Generador de respaldo."],
+        impacto_sla: "99.671% Disponibilidad Esperada (~28.8 horas/año de inactividad)",
+        acciones_correctivas: ["Instalar Grupo Electrógeno y UPS para ascender a Rated 2.", "Configurar climatización redundante para Rated 3."]
+      },
+      evaluacion_certificado: "INFRAESTRUCTURA INICIAL (RATED 1): El sitio carece de redundancia. Cualquier falla en la acometida o climatización provocará una caída total del servicio."
+    };
+
+    let currentState = JSON.parse(JSON.stringify(initialState));
+    let audioEnabled = true;
+    let audioCtx = null;
+
+    // LOCAL STORAGE API KEY SETUP
+    const apiKeyInput = document.getElementById('api-key-input');
+    const savedKey = localStorage.getItem('gemini_datacenter_api_key');
+    if (savedKey) {
+      apiKeyInput.value = savedKey;
+    }
+
+    apiKeyInput.addEventListener('change', () => {
+      localStorage.setItem('gemini_datacenter_api_key', apiKeyInput.value.trim());
+    });
+
+    document.getElementById('toggle-key-visibility').addEventListener('click', () => {
+      if (apiKeyInput.type === 'password') {
+        apiKeyInput.type = 'text';
+      } else {
+        apiKeyInput.type = 'password';
+      }
+    });
+
+    // CLOCK UPDATE
+    function updateClock() {
+      const now = new Date();
+      const timeStr = now.toISOString().substring(11, 19) + " UTC";
+      document.getElementById('live-clock').innerText = timeStr;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // AUDIO SYNTHESIZER
+    function playBeep(type) {
+      if (!audioEnabled) return;
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'critical') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.3);
+          gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.3);
+        } else if (type === 'alert') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.2);
+        } else if (type === 'upgrade') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.25);
+          gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.25);
+        } else {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.05);
+        }
+      } catch (e) {
+        console.warn('Audio notice:', e);
+      }
+    }
+
+    // AUDIO TOGGLE
+    document.getElementById('audio-toggle-btn').addEventListener('click', () => {
+      audioEnabled = !audioEnabled;
+      const label = document.getElementById('audio-label');
+      const icon = document.getElementById('audio-icon');
+      if (audioEnabled) {
+        label.innerText = 'Sonido ON';
+        icon.className = 'fa-solid fa-volume-high text-blue-400';
+        playBeep('click');
+      } else {
+        label.innerText = 'Sonido OFF';
+        icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+      }
+    });
+
+    // CALCULATE RATED LEVEL BASED ON COUNTERMEASURES
+    function calculateRatedLevel() {
+      const cm = currentState.countermeasures;
+      if (cm.active_fault_tolerant) return 4;
+      if (cm.crac_redundant) return 3;
+      if (cm.ups_generator) return 2;
+      return 1;
+    }
+
+    // RENDER RATED LEVEL BADGE & TELEMETRY
+    function renderRatedBadge() {
+      currentState.ratedLevel = calculateRatedLevel();
+      const level = currentState.ratedLevel;
+
+      const container = document.getElementById('rated-badge-container');
+      const dot = document.getElementById('rated-led-dot');
+      const text = document.getElementById('rated-level-text');
+      const overallText = document.getElementById('overall-status-text');
+      const overallLed = document.getElementById('overall-led');
+      const overallBadge = document.getElementById('overall-status-badge');
+      const pduText = document.getElementById('pdu-bus-text');
+
+      if (level === 4) {
+        container.className = "bg-emerald-950/80 border border-emerald-700/80 text-emerald-400 px-4 py-2 rounded-lg flex items-center space-x-3 font-mono shadow-[0_0_18px_rgba(34,197,94,0.3)] transition-all duration-300";
+        dot.className = "led-glow-dot bg-emerald-400 shadow-[0_0_10px_#22c55e]";
+        text.innerText = "RATED 4 (Tolerante a Fallos 2N)";
+        overallBadge.className = "bg-emerald-950/80 border border-emerald-600/50 text-emerald-400 px-3 py-1.5 rounded flex items-center space-x-2 font-semibold";
+        overallLed.className = "led led-green";
+        overallText.innerText = "ESTADO: RATED 4 (FAULT TOLERANT)";
+        pduText.innerText = "Alimentación Dual 2N";
+        pduText.className = "text-emerald-400 font-bold";
+      } else if (level === 3) {
+        container.className = "bg-blue-950/80 border border-blue-700/80 text-blue-400 px-4 py-2 rounded-lg flex items-center space-x-3 font-mono shadow-[0_0_18px_rgba(59,130,246,0.3)] transition-all duration-300";
+        dot.className = "led-glow-dot bg-blue-400 shadow-[0_0_10px_#3b82f6]";
+        text.innerText = "RATED 3 (Mantenimiento Concurrente)";
+        overallBadge.className = "bg-blue-950/80 border border-blue-600/50 text-blue-400 px-3 py-1.5 rounded flex items-center space-x-2 font-semibold";
+        overallLed.className = "led led-blue";
+        overallText.innerText = "ESTADO: RATED 3 (CONCURRENTLY MAINTAINABLE)";
+        pduText.innerText = "Redundancia N+1";
+        pduText.className = "text-blue-400 font-bold";
+      } else if (level === 2) {
+        container.className = "bg-amber-950/80 border border-amber-700/80 text-amber-400 px-4 py-2 rounded-lg flex items-center space-x-3 font-mono shadow-[0_0_18px_rgba(245,158,11,0.3)] transition-all duration-300";
+        dot.className = "led-glow-dot bg-amber-400 shadow-[0_0_10px_#f59e0b]";
+        text.innerText = "RATED 2 (Componentes Redundantes N+1)";
+        overallBadge.className = "bg-amber-950/80 border border-amber-600/50 text-amber-400 px-3 py-1.5 rounded flex items-center space-x-2 font-semibold";
+        overallLed.className = "led led-amber";
+        overallText.innerText = "ESTADO: RATED 2 (REDUNDANT COMPONENTS)";
+        pduText.innerText = "Respaldo UPS/Gen N+1";
+        pduText.className = "text-amber-400 font-bold";
+      } else {
+        container.className = "bg-red-950/80 border border-red-700/80 text-red-400 px-4 py-2 rounded-lg flex items-center space-x-3 font-mono shadow-[0_0_15px_rgba(239,68,68,0.2)] transition-all duration-300";
+        dot.className = "led-glow-dot bg-red-500 shadow-[0_0_10px_#ef4444]";
+        text.innerText = "RATED 1 (Componentes Básicos)";
+        overallBadge.className = "bg-red-950/80 border border-red-600/50 text-red-400 px-3 py-1.5 rounded flex items-center space-x-2 font-semibold";
+        overallLed.className = "led led-red";
+        overallText.innerText = "ESTADO: RATED 1 (SIN REDUNDANCIA)";
+        pduText.innerText = "Ruta Única (Rated 1)";
+        pduText.className = "text-red-400 font-bold";
+      }
+
+      // Update countermeasure buttons UI states
+      let activeCount = 0;
+      Object.keys(currentState.countermeasures).forEach(key => {
+        const btn = document.getElementById(`cm-${key}`);
+        if (!btn) return;
+        const isActivated = currentState.countermeasures[key];
+        const statusBadge = btn.querySelector('.cm-status-badge');
+
+        if (isActivated) {
+          btn.classList.add('activated');
+          statusBadge.innerText = 'ACTIVADO';
+          statusBadge.className = 'cm-status-badge text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-700 font-bold';
+          activeCount++;
+        } else {
+          btn.classList.remove('activated');
+          statusBadge.innerText = 'DESACTIVADO';
+          statusBadge.className = 'cm-status-badge text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700';
+        }
+      });
+
+      document.getElementById('active-cm-count').innerText = `${activeCount} / 5`;
+    }
+
+    // RENDER RACK STATE IN UI
+    function renderRackState() {
+      let highestThreatLevel = 'normal';
+
+      currentState.equipos.forEach(eq => {
+        const card = document.getElementById(`equipment-${eq.id}`);
+        const badge = document.getElementById(`badge-${eq.id}`);
+        const tempSpan = document.getElementById(`temp-${eq.id}`);
+        const loadSpan = document.getElementById(`load-${eq.id}`);
+
+        if (!card) return;
+
+        // Reset classes
+        card.className = "equipment-card rounded p-2.5 cursor-pointer hover:scale-[1.01] relative ";
+        
+        if (eq.estado === 'critico') {
+          card.classList.add('status-critico');
+          badge.className = 'text-[9px] font-mono px-1.5 py-0.5 rounded font-bold uppercase bg-red-950 text-red-400 border border-red-700 animate-pulse';
+          badge.innerText = 'CRÍTICO';
+          tempSpan.className = 'font-bold text-red-400';
+          loadSpan.className = 'font-bold text-red-400';
+          highestThreatLevel = 'critico';
+        } else if (eq.estado === 'alerta') {
+          card.classList.add('status-alerta');
+          badge.className = 'text-[9px] font-mono px-1.5 py-0.5 rounded font-bold uppercase bg-amber-950 text-amber-400 border border-amber-700';
+          badge.innerText = 'ALERTA';
+          tempSpan.className = 'font-bold text-amber-400';
+          loadSpan.className = 'font-bold text-amber-400';
+          if (highestThreatLevel !== 'critico') highestThreatLevel = 'alerta';
+        } else {
+          card.classList.add('status-normal');
+          badge.className = 'text-[9px] font-mono px-1.5 py-0.5 rounded font-bold uppercase bg-emerald-950 text-emerald-400 border border-emerald-700';
+          badge.innerText = 'NORMAL';
+          tempSpan.className = 'font-bold text-emerald-400';
+          loadSpan.className = 'font-bold text-blue-400';
+        }
+
+        tempSpan.innerText = `${eq.temperatura_c}°C`;
+        loadSpan.innerText = `${eq.carga_porcentaje}%`;
+      });
+
+      const auditRating = document.getElementById('audit-rating-status');
+
+      if (highestThreatLevel === 'critico') {
+        auditRating.className = 'text-red-400 font-bold';
+        auditRating.innerText = currentState.auditoria_normativa.nivel_rated_afectado || 'COLAPSO TÉCNICO';
+        playBeep('critical');
+      } else if (highestThreatLevel === 'alerta') {
+        auditRating.className = 'text-amber-400 font-bold';
+        auditRating.innerText = currentState.auditoria_normativa.nivel_rated_afectado || 'ALERTA / DEGRADADO';
+        playBeep('alert');
+      } else {
+        auditRating.className = 'text-emerald-400 font-bold';
+        auditRating.innerText = `RATED ${currentState.ratedLevel} (MITIGADO / SEGURO)`;
+      }
+    }
+
+    // RENDER AUDIT CONSOLE LOG & CERTIFICATE EVALUATION
+    function renderAuditConsole() {
+      const output = document.getElementById('audit-output');
+      const certOutput = document.getElementById('cert-output');
+      const timestamp = document.getElementById('audit-timestamp');
+      const certTimestamp = document.getElementById('cert-timestamp');
+      const audit = currentState.auditoria_normativa;
+      const certEval = currentState.evaluacion_certificado;
+
+      const now = new Date();
+      const timeStr = now.toTimeString().split(' ')[0];
+      if (timestamp) timestamp.innerText = timeStr;
+      if (certTimestamp) certTimestamp.innerText = timeStr;
+
+      const isCritical = currentState.equipos.some(e => e.estado === 'critico');
+      const isAlert = currentState.equipos.some(e => e.estado === 'alerta');
+
+      let borderColor = 'border-emerald-500';
+      let titleColor = 'text-emerald-400';
+      let bgColor = 'bg-emerald-950/15';
+
+      if (isCritical) {
+        borderColor = 'border-red-500';
+        titleColor = 'text-red-400';
+        bgColor = 'bg-red-950/20';
+      } else if (isAlert) {
+        borderColor = 'border-amber-500';
+        titleColor = 'text-amber-400';
+        bgColor = 'bg-amber-950/20';
+      }
+
+      // Render log block inside audit-output
+      const logBlock = document.createElement('div');
+      logBlock.className = `border-l-2 ${borderColor} pl-3 py-2 ${bgColor} rounded-r space-y-2 mb-3 animate-fade-in`;
+
+      let clausulasHtml = '';
+      if (audit.clausulas_incumplidas && audit.clausulas_incumplidas.length > 0) {
+        clausulasHtml = `
+          <div class="mt-2">
+            <span class="text-slate-400 font-bold text-[10px] block">NORMATIVAS TIA-942 OBSERVADAS:</span>
+            <ul class="list-disc list-inside text-red-300 text-[10px] space-y-0.5 mt-0.5">
+              ${audit.clausulas_incumplidas.map(c => `<li>${c}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+      }
+
+      let accionesHtml = '';
+      if (audit.acciones_correctivas && audit.acciones_correctivas.length > 0) {
+        accionesHtml = `
+          <div class="mt-2">
+            <span class="text-slate-400 font-bold text-[10px] block">ACCIONES SUGERIDAS DE MITIGACIÓN:</span>
+            <ul class="list-disc list-inside text-blue-300 text-[10px] space-y-0.5 mt-0.5">
+              ${audit.acciones_correctivas.map(a => `<li>${a}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+      }
+
+      logBlock.innerHTML = `
+        <div class="flex items-center justify-between border-b border-slate-800/60 pb-1">
+          <span class="${titleColor} font-bold">[SIMULACIÓN: ${audit.amenaza_evaluada || 'ANÁLISIS DE RESILIENCIA'}]</span>
+          <span class="text-[9px] text-slate-500">${timeStr}</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-[10px] font-mono text-slate-300">
+          <div>
+            <span class="text-slate-500 block">EVALUACIÓN RATED:</span>
+            <strong class="${isCritical ? 'text-red-400' : isAlert ? 'text-amber-400' : 'text-emerald-400'}">${audit.nivel_rated_afectado || 'Rated 1'}</strong>
+          </div>
+          <div>
+            <span class="text-slate-500 block">CATEGORÍA NORMATIVA:</span>
+            <strong class="text-slate-200">${audit.categoria_tia942 || 'General'}</strong>
+          </div>
+        </div>
+
+        <p class="text-slate-300 text-[11px] leading-relaxed">
+          ${audit.resumen_ejecutivo || 'Sin detalles.'}
+        </p>
+
+        <div class="text-[10px] bg-black/60 p-1.5 rounded border border-slate-900">
+          <span class="text-slate-400 font-bold">DISPONIBILIDAD DE SLA:</span>
+          <span class="text-amber-300 ml-1">${audit.impacto_sla || 'No especificado.'}</span>
+        </div>
+
+        ${clausulasHtml}
+        ${accionesHtml}
+      `;
+
+      output.prepend(logBlock);
+
+      // Render certificate evaluation block inside cert-output
+      if (certOutput && certEval) {
+        const certBlock = document.createElement('div');
+        certBlock.className = `border-l-2 ${borderColor} p-3 ${bgColor} rounded-r space-y-1.5 mb-2 animate-fade-in border border-slate-800`;
+        certBlock.innerHTML = `
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-1">
+            <span class="text-amber-400 font-bold text-xs flex items-center space-x-1">
+              <i class="fa-solid fa-award"></i>
+              <span>EVALUACIÓN DE CERTIFICACIÓN TIA-942</span>
+            </span>
+            <span class="text-[9px] text-slate-500 font-mono">${timeStr}</span>
+          </div>
+          <p class="text-slate-200 text-xs leading-relaxed font-sans pt-1">
+            ${certEval}
+          </p>
+          <div class="text-[10px] font-mono text-slate-400 pt-1 flex items-center justify-between border-t border-slate-800/40">
+            <span>EVENTO: <strong class="text-slate-200">${audit.amenaza_evaluada || 'REVISIÓN GENERAL'}</strong></span>
+            <span>NIVEL: <strong class="${isCritical ? 'text-red-400' : isAlert ? 'text-amber-400' : 'text-emerald-400'}">RATED ${currentState.ratedLevel}</strong></span>
+          </div>
+        `;
+        certOutput.prepend(certBlock);
+      }
+    }
+
+    // LOG MEJORA ACTIVADA IN CONSOLE
+    function logCountermeasureEvent(cmName, isActivated) {
+      const output = document.getElementById('audit-output');
+      const now = new Date();
+      const timeStr = now.toTimeString().split(' ')[0];
+      const logBlock = document.createElement('div');
+      
+      if (isActivated) {
+        logBlock.className = "border-l-2 border-emerald-500 pl-3 py-1.5 bg-emerald-950/20 rounded-r text-[11px] font-mono space-y-1 mb-2";
+        logBlock.innerHTML = `
+          <div class="flex items-center justify-between text-emerald-400 font-bold">
+            <span>[MEJORA ACTIVADA: ${cmName}]</span>
+            <span class="text-[9px] text-slate-500">${timeStr}</span>
+          </div>
+          <p class="text-slate-200">Capacidad instalada. Nivel de certificación elevado a <strong class="text-emerald-400">RATED ${currentState.ratedLevel}</strong>.</p>
+        `;
+      } else {
+        logBlock.className = "border-l-2 border-amber-500 pl-3 py-1.5 bg-amber-950/20 rounded-r text-[11px] font-mono space-y-1 mb-2";
+        logBlock.innerHTML = `
+          <div class="flex items-center justify-between text-amber-400 font-bold">
+            <span>[MEJORA DESACTIVADA: ${cmName}]</span>
+            <span class="text-[9px] text-slate-500">${timeStr}</span>
+          </div>
+          <p class="text-slate-300">Infraestructura removida. Nivel de certificación ajustado a <strong class="text-amber-400">RATED ${currentState.ratedLevel}</strong>.</p>
+        `;
+      }
+
+      output.prepend(logBlock);
+    }
+
+    // FALLBACK LOCAL SIMULATION ENGINE (When no API Key or offline)
+    function simulateLocalThreat(threatText) {
+      const lower = threatText.toLowerCase();
+      const level = currentState.ratedLevel;
+      const cm = currentState.countermeasures;
+
+      let updatedEquipos = JSON.parse(JSON.stringify(currentState.equipos));
+      let audit = {
+        amenaza_evaluada: threatText,
+        nivel_rated_afectado: `Rated ${level}`,
+        categoria_tia942: "Evaluación de Resiliencia TIA-942",
+        resumen_ejecutivo: "",
+        clausulas_incumplidas: [],
+        impacto_sla: "Variable según nivel de contramedidas",
+        acciones_correctivas: []
+      };
+      let certEval = "";
+
+      // THREAT 1: CRAC / HVAC FAILURE
+      if (lower.includes("crac") || lower.includes("aire") || lower.includes("temperatura") || lower.includes("hvac") || lower.includes("calor")) {
+        const isMitigated = level >= 3 || cm.crac_redundant;
+
+        if (isMitigated) {
+          updatedEquipos[0].temperatura_c = 26;
+          updatedEquipos[0].estado = "normal";
+          updatedEquipos[0].mensaje_estado = "Temperatura estable. Vías redundantes de aire climatizado activas.";
+
+          updatedEquipos[1].temperatura_c = 31;
+          updatedEquipos[1].estado = "normal";
+          updatedEquipos[1].mensaje_estado = "Intercambio de calor normalizado por unidades HVAC redundantes.";
+
+          updatedEquipos[2].temperatura_c = 25;
+          updatedEquipos[2].estado = "normal";
+          updatedEquipos[2].mensaje_estado = "SAN operando a temperatura ideal de almacenamiento.";
+
+          audit.nivel_rated_afectado = `Rated ${level} (MITIGADO)`;
+          audit.categoria_tia942 = "Mecánica y HVAC (ANSI/TIA-942 Sección 6.4)";
+          audit.resumen_ejecutivo = "La falla del acondicionador de aire primario fue absorbida sin interrupción gracias a la topología de climatización de mantenimiento concurrente (N+1/2N).";
+          audit.impacto_sla = "99.982% - 99.999% SLA Mantenido al 100%";
+          certEval = `EVENTO EXITOSAMENTE MITIGADO (RATED ${level}): El sitio cuenta con vías redundantes de refrigeración. La producción continuó al 100% sin degradación térmica.`;
+        } else {
+          updatedEquipos[0].temperatura_c = 42;
+          updatedEquipos[0].estado = "alerta";
+          updatedEquipos[0].mensaje_estado = "Elevación térmica ambiental por falta de unidades de extracción redundantes.";
+
+          updatedEquipos[1].temperatura_c = 74;
+          updatedEquipos[1].estado = "critico";
+          updatedEquipos[1].mensaje_estado = "Sobrecalentamiento crítico de CPU en Blade Enclosure. Estrangulamiento térmico activo.";
+
+          updatedEquipos[2].temperatura_c = 48;
+          updatedEquipos[2].estado = "alerta";
+          updatedEquipos[2].mensaje_estado = "Temperatura de discos SAN en límite de advertencia.";
+
+          audit.nivel_rated_afectado = `Rated ${level} (VULNERADO / COLAPSO)`;
+          audit.categoria_tia942 = "Mecánica y HVAC (ANSI/TIA-942 Sección 6.4)";
+          audit.resumen_ejecutivo = "Al no disponer de climatización redundante (Rated 3/4), el fallo del CRAC único elevó la temperatura del pasillo frío por encima de los límites ASHRAE A1 en menos de 4 minutos.";
+          audit.clausulas_incumplidas = [
+            "TIA-942 Sección 6.4.2: Falta de vías de distribución de aire concurrentemente mantenibles.",
+            "ASHRAE Class A1 Thermal Limits: Superado umbral crítico de 45°C en servidores."
+          ];
+          audit.acciones_correctivas = [
+            "Activar la mejora 'HVAC Mantenimiento Concurrente' para elevar el sitio a Rated 3.",
+            "Configurar contención física de pasillo frío/caliente."
+          ];
+          audit.impacto_sla = "Caída de Disponibilidad a 99.67% (~28 horas de inactividad/año)";
+          certEval = `COLAPSO TÉRMICO (RATED ${level}): Datacenter sin capacidad de absorción de falla HVAC. Se requiere inversión en infraestructura de climatización redundante.`;
+        }
+      } 
+      // THREAT 2: POWER OUTAGE WITHOUT UPS
+      else if (lower.includes("energía") || lower.includes("ups") || lower.includes("corte") || lower.includes("eléctrica")) {
+        const isMitigated = level >= 2 || cm.ups_generator || cm.active_fault_tolerant;
+
+        if (isMitigated) {
+          updatedEquipos[0].estado = "normal";
+          updatedEquipos[0].mensaje_estado = "Transferencia instantánea a bus B de batería UPS y generador auxiliar.";
+
+          updatedEquipos[1].estado = "normal";
+          updatedEquipos[1].carga_porcentaje = 48;
+          updatedEquipos[1].mensaje_estado = "Nodos Blade alimentados continuamente por transfer switch estático (STS).";
+
+          updatedEquipos[2].estado = "normal";
+          updatedEquipos[2].mensaje_estado = "Cabina SAN operando con suministro eléctrico respaldado por grupo electrógeno.";
+
+          audit.nivel_rated_afectado = `Rated ${level} (MITIGADO)`;
+          audit.categoria_tia942 = "Infraestructura Eléctrica (ANSI/TIA-942 Sección 7)";
+          audit.resumen_ejecutivo = "La interrupción de la red eléctrica comercial fue conmutada automáticamente al grupo electrógeno N+1 sin caída de tensión ni pérdida de paquetes.";
+          audit.impacto_sla = "100% Continuidad de Negocio Guardada";
+          certEval = `EVENTO EXITOSAMENTE MITIGADO (RATED ${level}): La inversión en UPS y planta de energía de respaldo evitó el apagado repentino del equipamiento de cómputo.`;
+        } else {
+          updatedEquipos[0].estado = "alerta";
+          updatedEquipos[0].carga_porcentaje = 10;
+          updatedEquipos[0].mensaje_estado = "Switch en consumo residual por caída de acometida única.";
+
+          updatedEquipos[1].estado = "critico";
+          updatedEquipos[1].carga_porcentaje = 0;
+          updatedEquipos[1].mensaje_estado = "APAGADO REPENTINO por corte de energía sin respaldo de baterías/planta.";
+
+          updatedEquipos[2].estado = "critico";
+          updatedEquipos[2].mensaje_estado = "SAN Offline. Riesgo alto de corrupción de buffer de escritura y pérdida de datos.";
+
+          audit.nivel_rated_afectado = `Rated ${level} (COLAPSO TOTAL)`;
+          audit.categoria_tia942 = "Infraestructura Eléctrica (ANSI/TIA-942 Sección 7)";
+          audit.resumen_ejecutivo = "Punto único de falla (SPOF) en la acometida eléctrica de entrada. El sitio colapsó instantáneamente por falta de UPS/Generador.";
+          audit.clausulas_incumplidas = [
+            "TIA-942 Sección 7.2: Ausencia de fuentes secundarias de energía y grupos electrógenos de emergencia.",
+            "TIA-942 Sección 7.4: Tiempo de autonomía de baterías nulo."
+          ];
+          audit.acciones_correctivas = [
+            "Activar la mejora 'Generador N+1 & UPS Respaldo' para escalar a Rated 2."
+          ];
+          audit.impacto_sla = "Pérdida Crítica de SLA y Corrupción de Datos";
+          certEval = `COLAPSO ELÉCTRICO (RATED 1): Apagado total del datacenter por falta de redundancia en la capa de suministro eléctrico.`;
+        }
+      } 
+      // THREAT 3: PHYSICAL BREACH
+      else if (lower.includes("intrusión") || lower.includes("física") || lower.includes("sala blanca") || lower.includes("brecha")) {
+        const isMitigated = cm.mantrap_biometric || level >= 4;
+
+        if (isMitigated) {
+          updatedEquipos.forEach(eq => {
+            eq.estado = "normal";
+            eq.mensaje_estado = "Acceso bloqueado por esclusa Mantrap y autenticación biométrica.";
+          });
+          audit.nivel_rated_afectado = `Rated ${level} (MITIGADO)`;
+          audit.categoria_tia942 = "Seguridad Física y Control de Acceso (Sección 5.8)";
+          audit.resumen_ejecutivo = "El intento de intrusión fue contenido en la esclusa de seguridad de doble puerta antes de alcanzar la sala blanca.";
+          audit.impacto_sla = "Sin impacto en la operación";
+          certEval = `INTRUSIÓN BLOQUEADA: Las esclusas Mantrap y el control biométrico impidieron el contacto directo con los gabinetes de servidores.`;
+        } else {
+          updatedEquipos[0].estado = "critico";
+          updatedEquipos[0].mensaje_estado = "Desconexión manual no autorizada de latiguillos de fibra en puertos ToR.";
+          updatedEquipos[1].estado = "alerta";
+
+          audit.nivel_rated_afectado = `Rated ${level} (VULNERADO)`;
+          audit.categoria_tia942 = "Seguridad Física y Acceso Perimetral (Sección 5.8)";
+          audit.resumen_ejecutivo = "Acceso no autorizado exitoso a la sala de servidores por falta de esclusas y control biométrico de doble factor.";
+          audit.clausulas_incumplidas = ["TIA-942 Sección 5.8.3: Carencia de zonas de acceso seguro con autenticación biométrica de 2 factores."];
+          audit.acciones_correctivas = ["Activar la contramedida 'Biometría & Esclusas Mantrap'."];
+          certEval = `VULNERACIÓN FÍSICA: Un intruso logró sabotear físicamente el cableado ToR por deficiencias en los controles de acceso perimetrales.`;
+        }
+      } 
+      // THREAT 4: DDOS ATTACK
+      else if (lower.includes("ddos") || lower.includes("sint") || lower.includes("tráfico") || lower.includes("flood")) {
+        const isMitigated = cm.antiddos_firewall || level >= 4;
+
+        if (isMitigated) {
+          updatedEquipos[0].estado = "normal";
+          updatedEquipos[0].carga_porcentaje = 42;
+          updatedEquipos[0].mensaje_estado = "Ataque mitigado por centro de depuración scrubbing anti-DDoS en la nube.";
+
+          audit.nivel_rated_afectado = `Rated ${level} (MITIGADO)`;
+          audit.categoria_tia942 = "Telecomunicaciones y Redes (Sección 8)";
+          audit.resumen_ejecutivo = "El tráfico anómalo L3-L7 fue derivado al sistema BGP Anycast Scrubbing, limpiando el ancho de banda entrante.";
+          certEval = `ATAQUE LÓGICO MITIGADO: El Firewall WAF y el sistema Anti-DDoS filtraron la inundación de paquetes sin saturar los enlaces del sitio.`;
+        } else {
+          updatedEquipos[0].estado = "critico";
+          updatedEquipos[0].carga_porcentaje = 100;
+          updatedEquipos[0].mensaje_estado = "Saturación total de tabla MAC/ARP y buffers de paquete por ataque SYN-Flood.";
+
+          audit.nivel_rated_afectado = `Rated ${level} (SATURACIÓN LÓGICA)`;
+          audit.categoria_tia942 = "Telecomunicaciones y Capa de Enlace (Sección 8.5)";
+          audit.resumen_ejecutivo = "Colapso de la capa de acceso ToR por denegación de servicio masiva sin protección perimetral Anti-DDoS.";
+          audit.clausulas_incumplidas = ["TIA-942 Sección 8.5: Carencia de mecanismos de mitigación volumétrica de borde."];
+          audit.acciones_correctivas = ["Activar la contramedida 'Anti-DDoS Nube & Firewall WAF'."];
+          certEval = `SATURACIÓN DE RED: Caída de la conectividad de los servidores por saturación del plano de control del switch Core ToR.`;
+        }
+      }
+      // OTHER CUSTOM THREATS
+      else {
+        const isMitigated = level >= 3;
+        updatedEquipos.forEach(eq => {
+          eq.estado = isMitigated ? "normal" : "alerta";
+          eq.mensaje_estado = isMitigated ? "Amenaza absorbida por margen de resiliencia del sitio." : "Anomalía detectada. Se recomienda verificar parámetros.";
+        });
+        audit.resumen_ejecutivo = `Análisis finalizado para la amenaza: "${threatText}". Nivel de respuesta basado en Rated ${level}.`;
+        certEval = isMitigated ? 
+          `SITIO RESILIENTE (RATED ${level}): La redundancia general del datacenter soportó el evento anómalo.` : 
+          `RIESGO DETECTADO (RATED ${level}): Se sugiere escalar la infraestructura para evitar incidentes en cascada.`;
+      }
+
+      currentState.equipos = updatedEquipos;
+      currentState.auditoria_normativa = audit;
+      currentState.evaluacion_certificado = certEval;
+    }
+
+    // CALL GEMINI 2.5 FLASH API WITH STRICT SYSTEM INSTRUCTION
+    async function triggerGeminiSimulation(threatText) {
+      const apiKey = apiKeyInput.value.trim() || localStorage.getItem('gemini_datacenter_api_key');
+      const spinner = document.getElementById('ai-loading-spinner');
+
+      // If no API Key is provided, use high-fidelity local simulation
+      if (!apiKey) {
+        console.log("No API Key detected, running local simulation engine...");
+        spinner.classList.remove('hidden');
+        await new Promise(r => setTimeout(r, 600)); // Smooth UX transition
+        simulateLocalThreat(threatText);
+        renderRackState();
+        renderAuditConsole();
+        spinner.classList.add('hidden');
+        return;
+      }
+
+      spinner.classList.remove('hidden');
+
+      try {
+        const GoogleGenAI = window.GoogleGenAI;
+        if (!GoogleGenAI) {
+          throw new Error("SDK @google/genai no cargado.");
+        }
+
+        const ai = new GoogleGenAI({ apiKey });
+
+        const activeCMList = Object.keys(currentState.countermeasures)
+          .filter(k => currentState.countermeasures[k])
+          .join(', ');
+
+        const systemInstructionText = `
+Eres un Auditor Senior de Datacenters Certificado en ANSI/TIA-942.
+Tu objetivo es evaluar el impacto técnico de una amenaza (física o lógica) sobre un gabinete rack de 19 pulgadas y devolver el resultado EXCLUSIVAMENTE en formato JSON puro sin marcas de código markdown (\`\`\`json).
+
+ESTADO ACTUAL DE LA INFRAESTRUCTURA:
+- Nivel Rated Actual del Datacenter: Rated ${currentState.ratedLevel} (1=Básico sin redundancia, 2=Componentes Redundantes, 3=Mantenimiento Concurrente, 4=Tolerante a Fallos 2N).
+- Contramedidas y Mejoras de Seguridad Activas: [${activeCMList || 'NINGUNA - SOLO RATED 1 BÁSICO'}].
+
+LÓGICA DE EVALUACIÓN Y MITIGACIÓN:
+1. Evalúa si la amenaza sufrida es absorbida/mitigada por el Nivel Rated o por las Contramedidas activas:
+   - Falla de Aire / CRAC: Mitigada si el sitio es Rated 3, Rated 4, o tiene la contramedida 'crac_redundant'.
+   - Corte Eléctrico sin UPS: Mitigada si el sitio es Rated 2, 3, 4, o tiene 'ups_generator' / 'active_fault_tolerant'.
+   - Intrusión Física: Mitigada si tiene 'mantrap_biometric' o Rated 4.
+   - Ataque DDoS: Mitigado si tiene 'antiddos_firewall' o Rated 4.
+   - Ransomware / OOB: Mitigado parcialmente o contenido si tiene 'antiddos_firewall' o Rated 3+.
+
+2. SI ES MITIGADO:
+   - Los equipos NO entran en estado 'critico'. Mantienen temperaturas seguras (24°C - 32°C) y cargas normales/moderadas. Sus estados deben ser 'normal' o a lo sumo 'alerta' momentánea.
+   - El campo 'evaluacion_certificado' debe celebrar expresamente que la inversión en la infraestructura (Rated ${currentState.ratedLevel}) y contramedidas previno el colapso.
+
+3. SI NO ES MITIGADO (Falta de inversión/redundancia):
+   - Los equipos afectados entran en estado 'critico' o 'alerta' alta. Las temperaturas se disparan (45°C - 80°C) o las cargas colapsan/se saturan a 100%.
+   - El campo 'evaluacion_certificado' debe explicar con claridad por qué la falta de redundancia (Rated 1 o ausencia de la contramedida específica) causó el fallo técnico del sitio.
+
+ESTRUCTURA OBLIGATORIA DEL JSON DE RESPUESTA:
+{
+  "equipos": [
+    {
+      "id": "switch_core_tor",
+      "temperatura_c": number,
+      "carga_porcentaje": number,
+      "estado": "normal" | "alerta" | "critico",
+      "mensaje_estado": "string"
+    },
+    {
+      "id": "servidor_blade_prod",
+      "temperatura_c": number,
+      "carga_porcentaje": number,
+      "estado": "normal" | "alerta" | "critico",
+      "mensaje_estado": "string"
+    },
+    {
+      "id": "cabina_discos_san",
+      "temperatura_c": number,
+      "carga_porcentaje": number,
+      "estado": "normal" | "alerta" | "critico",
+      "mensaje_estado": "string"
+    }
+  ],
+  "auditoria_normativa": {
+    "amenaza_evaluada": "string",
+    "nivel_rated_afectado": "string",
+    "categoria_tia942": "string",
+    "resumen_ejecutivo": "string",
+    "clausulas_incumplidas": ["string"],
+    "impacto_sla": "string",
+    "acciones_correctivas": ["string"]
+  },
+  "evaluacion_certificado": "string"
+}
+`;
+
+        const promptText = `
+AMENAZA INYECTADA POR EL USUARIO:
+"${threatText}"
+
+ESTADO ACTUAL DE LOS EQUIPOS EN EL RACK:
+${JSON.stringify(currentState.equipos, null, 2)}
+
+Analiza la amenaza versus las contramedidas activas y el Nivel Rated ${currentState.ratedLevel}. Devuelve únicamente el JSON estructurado.
+`;
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: promptText,
+          config: {
+            temperature: 0.2,
+            systemInstruction: systemInstructionText,
+            responseMimeType: "application/json"
+          }
+        });
+
+        const rawText = response.text ? response.text.trim() : "";
+        console.log("Gemini Raw Response:", rawText);
+
+        // Sanitize Markdown backticks if present
+        const cleanJsonStr = rawText.replace(/^```json/i, '').replace(/^```/i, '').replace(/```$/i, '').trim();
+        const parsed = JSON.parse(cleanJsonStr);
+
+        if (parsed && parsed.equipos && parsed.auditoria_normativa) {
+          currentState.equipos = parsed.equipos;
+          currentState.auditoria_normativa = parsed.auditoria_normativa;
+          if (parsed.evaluacion_certificado) {
+            currentState.evaluacion_certificado = parsed.evaluacion_certificado;
+          }
+        } else {
+          throw new Error("Estructura JSON devuelta incompleta.");
+        }
+
+      } catch (err) {
+        console.error("Gemini API Error, fallback to local simulator:", err);
+        simulateLocalThreat(threatText);
+      } finally {
+        renderRackState();
+        renderAuditConsole();
+        spinner.classList.add('hidden');
+      }
+    }
+
+    // EVENT LISTENERS - THREAT BUTTONS
+    document.querySelectorAll('.threat-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        playBeep('click');
+        const threat = btn.getAttribute('data-threat');
+        triggerGeminiSimulation(threat);
+      });
+    });
+
+    // EVENT LISTENERS - COUNTERMEASURE BUTTONS
+    document.querySelectorAll('.cm-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cmKey = btn.getAttribute('data-cm');
+        const isActivated = !currentState.countermeasures[cmKey];
+        currentState.countermeasures[cmKey] = isActivated;
+
+        playBeep(isActivated ? 'upgrade' : 'click');
+        renderRatedBadge();
+
+        const cmName = btn.querySelector('span span')?.innerText || cmKey;
+        logCountermeasureEvent(cmName, isActivated);
+      });
+    });
+
+    // CLEAR ALL COUNTERMEASURES
+    document.getElementById('clear-cm-btn').addEventListener('click', () => {
+      playBeep('click');
+      Object.keys(currentState.countermeasures).forEach(k => {
+        currentState.countermeasures[k] = false;
+      });
+      renderRatedBadge();
+      const output = document.getElementById('audit-output');
+      const logBlock = document.createElement('div');
+      logBlock.className = "border-l-2 border-slate-600 pl-3 py-1.5 bg-black/80 text-slate-400 text-[11px] font-mono mb-2";
+      logBlock.innerText = "> Se han desactivado todas las contramedidas. Datacenter reajustado a Rated 1.";
+      output.prepend(logBlock);
+    });
+
+    // CUSTOM THREAT SIMULATION
+    document.getElementById('custom-threat-btn').addEventListener('click', () => {
+      const input = document.getElementById('custom-threat-input');
+      const val = input.value.trim();
+      if (!val) {
+        input.focus();
+        return;
+      }
+      playBeep('click');
+      triggerGeminiSimulation(val);
+    });
+
+    // RESET SIMULATION BUTTON
+    document.getElementById('reset-sim-btn').addEventListener('click', () => {
+      playBeep('click');
+      currentState = JSON.parse(JSON.stringify(initialState));
+      renderRatedBadge();
+      renderRackState();
+
+      const output = document.getElementById('audit-output');
+      const certOutput = document.getElementById('cert-output');
+      output.innerHTML = `
+        <div class="border-l-2 border-red-500 pl-3 py-1 bg-red-950/20 rounded-r">
+          <span class="text-red-400 font-bold block mb-1">&gt; SIMULADOR RESTABLECIDO: RATED 1</span>
+          <p class="text-slate-300 leading-relaxed text-[11px]">
+            Infraestructura reajustada al estado inicial de <strong class="text-red-400">Rated 1 (Componentes Básicos)</strong>.
+          </p>
+        </div>
+      `;
+      if (certOutput) {
+        certOutput.innerHTML = `
+          <div class="border-l-2 border-red-500 p-3 bg-red-950/20 rounded-r border border-slate-800">
+            <span class="text-amber-400 font-bold text-xs block mb-1"><i class="fa-solid fa-award mr-1"></i> EVALUACIÓN DE CERTIFICADO INICIAL</span>
+            <p class="text-slate-200 text-xs leading-relaxed font-sans">
+              INFRAESTRUCTURA INICIAL (RATED 1): El sitio carece de redundancia. Cualquier falla en la acometida o climatización provocará una caída total del servicio.
+            </p>
+          </div>
+        `;
+      }
+    });
+
+    // EQUIPMENT INSPECTION MODAL LISTENERS
+    const modal = document.getElementById('equipment-modal');
+    const closeModal = () => modal.classList.add('hidden');
+
+    document.getElementById('close-modal-btn').addEventListener('click', closeModal);
+    document.getElementById('modal-ok-btn').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    // OPEN MODAL ON EQUIPMENT CLICK
+    currentState.equipos.forEach(eq => {
+      const card = document.getElementById(`equipment-${eq.id}`);
+      if (!card) return;
+      card.addEventListener('click', () => {
+        playBeep('click');
+        const currentEqData = currentState.equipos.find(e => e.id === eq.id) || eq;
+
+        document.getElementById('modal-equip-title').innerText = currentEqData.nombre;
+        document.getElementById('modal-equip-id').innerText = `IDENTIFICADOR: U-SLOT / ${currentEqData.id.toUpperCase()}`;
+        document.getElementById('modal-equip-temp').innerText = `${currentEqData.temperatura_c}°C`;
+        document.getElementById('modal-equip-load').innerText = `${currentEqData.carga_porcentaje}%`;
+        document.getElementById('modal-equip-status-msg').innerText = currentEqData.mensaje_estado || "Estado normal de operación.";
+
+        if (eq.id === 'switch_core_tor') {
+          document.getElementById('modal-equip-icon').className = 'fa-solid fa-network-wired text-xl text-blue-400';
+          document.getElementById('modal-equip-tia-spec').innerText = "ANSI/TIA-942 Sección 8: Enlaces redundantes Top-of-Rack (ToR) e interconexión Cross-Connect.";
+        } else if (eq.id === 'servidor_blade_prod') {
+          document.getElementById('modal-equip-icon').className = 'fa-solid fa-server text-xl text-blue-400';
+          document.getElementById('modal-equip-tia-spec').innerText = "ANSI/TIA-942 Sección 6 & ASHRAE Class A1: Tolerancia de temperatura de entrada de aire CPU y fuentes duales.";
+        } else {
+          document.getElementById('modal-equip-icon').className = 'fa-solid fa-database text-xl text-blue-400';
+          document.getElementById('modal-equip-tia-spec').innerText = "ANSI/TIA-942 Sección 7: Alimentación continua A+B con respaldo de bus de almacenamiento SAN redundante.";
+        }
+
+        modal.classList.remove('hidden');
+      });
+    });
+
+    // INITIAL RENDER
+    renderRatedBadge();
+    renderRackState();
+
+  </script>
+</body>
+</html>
